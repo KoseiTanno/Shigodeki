@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>しごでき！</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- メニュー画面 -->
+  <div id="menu-screen" class="container">
+    <h1>しごでき！</h1>
+    <button onclick="goToBoard()">タスクボード</button>
+    <button onclick="goToCreateTask()">新規タスク作成</button>
+    <button onclick="goToGacha()">褒め言葉ガチャ</button>
+    <button onclick="goToSettings()">設定</button>
+  </div>
+
+  <!-- タスクボード画面 -->
+  <div id="board-screen" class="container hidden">
+    <h2>タスクボード</h2>
+    <div id="task-list"></div>
+    <button onclick="goToMenu()" class="back-button">メニュー画面に戻る</button>
+    <button onclick="goToCreateTask()" class="create-task-back-button">タスクを作成する</button>
+    <button id="sort-btn">並び替え</button>
+    <div id="sort-options" class="hidden">
+      <button onclick="sortTasks('created')">作成順</button>
+      <button onclick="sortTasks('priority')">重要度順</button>
+    </div>
+  </div>
+
+  <!-- タスク作成画面 -->
+  <div id="create-task-screen" class="container hidden">
+    <h2>新規タスク作成</h2>
+    <form id="create-task-form">
+      <label for="task-title">タスクタイトル:</label>
+      <input type="text" id="task-title" required>
+      
+      <label for="task-description">タスク説明:</label>
+      <textarea id="task-description"></textarea>
+      
+      <label for="task-deadline">期限:</label>
+      <input type="datetime-local" id="task-deadline" required>
+
+      <label for="task-priority">タスク重要度(1~5):</label>
+      <input type="number" id="task-priority" min="1" max="5" step="1" placeholder="1(低)~5(高)">
+
+      <button type="submit">タスクを作成</button>
+    </form>
+    <button onclick="goToMenu()" class="back-button">メニュー画面に戻る</button>
+  </div>
+
+  <!-- ガチャ画面 -->
+  <div id="gacha-screen" class="container hidden">
+    <h2>褒め言葉ガチャ</h2>
+    <p id="points-display">現在のポイント: 0pt</p>
+    <button onclick="pullSingleGacha()">単発ガチャ (100pt)</button>
+    <button onclick="pullTenGacha()">10連ガチャ (900pt)</button>
+    <div id="gacha-result"></div>
+    <button onclick="goToMenu()" class="back-button">メニュー画面に戻る</button>
+  </div>
+
+  <!-- 設定画面 -->
+  <div id="settings-screen" class="container hidden">
+    <h2>設定</h2>
+    
+    <!-- 通知タイミング設定 -->
+    <form id="settings-form">
+      <div class="setting-item">
+        <label for="notify-one-day">通知1（分単位）:</label>
+        <input type="number" id="notify-one-day" min="1" placeholder="1440">
+      </div>
+      
+      <div class="setting-item">
+        <label for="notify-one-hour">通知2（分単位）:</label>
+        <input type="number" id="notify-one-hour" min="1" placeholder="60">
+      </div>
+      
+      <div class="setting-item">
+        <label for="notify-ten-minutes">通知3（分単位）:</label>
+        <input type="number" id="notify-ten-minutes" min="1" placeholder="10">
+      </div>
+      
+      <button type="submit">設定を保存</button>
+    </form>
+    
+    <button onclick="goToMenu()" class="back-button">メニュー画面に戻る</button>
+  </div>
+
+  <script>
+    // 画面切り替え関数
+    function showScreen(screenId) {
+      document.querySelectorAll('.container').forEach(screen => screen.classList.add('hidden'));
+      document.getElementById(screenId).classList.remove('hidden');
+    }
+
+    function goToMenu() {
+      showScreen('menu-screen');
+    }
+
+    function goToBoard() {
+      showScreen('board-screen');
+    }
+
+    function goToCreateTask() {
+      showScreen('create-task-screen');
+    }
+
+    function goToGacha() {
+      showScreen('gacha-screen');
+      updatePointsDisplay();
+    }
+
+    function goToSettings() {
+      showScreen('settings-screen');
+      loadSettings();
+    }
+
+    // タスク作成フォームの送信処理
+    document.getElementById('create-task-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+
+      const title = document.getElementById('task-title').value;
+      const description = document.getElementById('task-description').value;
+      const priority = document.getElementById('task-priority').value || 1;
+      const deadline = document.getElementById('task-deadline').value.replace('T', ' ');
+
+      if (title && deadline) {
+        const taskList = document.getElementById('task-list');
+        taskList.appendChild(createTaskItem(title, description, priority, deadline, taskList.children.length));
+        saveTasksToStorage();
+        goToBoard();
+      }
+    });
+
+    document.getElementById('sort-btn').addEventListener('click', function () {
+      const sortOptions = document.getElementById('sort-options');
+      if (sortOptions.classList.contains('hidden')) {
+        sortOptions.classList.remove('hidden');
+      } else {
+        sortOptions.classList.add('hidden');
+      }
+    });
+
+    document.addEventListener('click', function (event) {
+      const sortOptions = document.getElementById('sort-options');
+      const sortBtn = document.getElementById('sort-btn');
+
+      if (!sortOptions.contains(event.target) && !sortBtn.contains(event.target)) {
+        sortOptions.classList.add('hidden');
+      }
+    });
+
+    // タスク項目生成関数
+    function createTaskItem(title, description, priority, deadline, index) {
+      const taskItem = document.createElement('div');
+      taskItem.classList.add('task-item');
+      taskItem.setAttribute('draggable', 'true');
+      taskItem.setAttribute('data-priority', priority || 1);
+      taskItem.setAttribute('data-index', index);
+
+      const checkBox = document.createElement('input');
+      checkBox.type = 'checkbox';
+      checkBox.addEventListener('change', function () {
+        if (checkBox.checked) {
+          showCompliment();
+          taskItem.classList.add('completed');
+          points += 10;
+          updatePointsDisplay();
+          setTimeout(() => {
+            taskItem.remove();
+            saveTasksToStorage();
+          }, 600);
+        }
+      });
+
+      const taskContent = document.createElement('div');
+      taskContent.classList.add('task-content');
+
+      const taskTitle = document.createElement('h3');
+      taskTitle.textContent = title;
+
+      const taskDescription = document.createElement('p');
+      taskDescription.textContent = description;
+
+      const taskPriority = document.createElement('p');
+      taskPriority.textContent = `重要度: ${priority || 1}`;
+
+      const taskDeadline = document.createElement('p');
+      taskDeadline.textContent = `期限: ${deadline}`;
+
+      const editButton = createEditButton(taskItem, taskTitle, taskDescription, taskPriority, taskDeadline);
+      const deleteButton = createDeleteButton(taskItem);
+
+      taskContent.append(taskTitle, taskDescription, taskPriority, taskDeadline);
+      taskItem.append(checkBox, taskContent, editButton, deleteButton);
+      taskItem.addEventListener('dragstart', handleDragStart);
+      taskItem.addEventListener('dragover', handleDragOver);
+      taskItem.addEventListener('drop', handleDrop);
+      taskItem.addEventListener('dragend', handleDragEnd);
+
+      return taskItem;
+    }
+
+    let draggedItem = null;
+
+    function handleDragStart(event) {
+      draggedItem = this;
+      this.classList.add('dragging');
+    }
+
+    function handleDragOver(event) {
+      event.preventDefault();
+      const currentTask = this;
+
+      if (draggedItem !== currentTask) {
+        const taskList = document.getElementById('task-list');
+        const bounding = currentTask.getBoundingClientRect();
+        const offset = event.clientY - bounding.top;
+
+        if (offset > bounding.height / 2) {
+          taskList.insertBefore(draggedItem, currentTask.nextSibling);
+        } else {
+          taskList.insertBefore(draggedItem, currentTask);
+        }
+      }
+    }
+
+    function handleDrop(event) {
+      event.preventDefault();
+    }
+
+    function handleDragEnd() {
+      this.classList.remove('dragging');
+      draggedItem = null;
+      saveTasksToStorage();
+    }
+
+    // 並び替え関数
+    function sortTasks(criteria) {
+      const taskList = document.getElementById('task-list');
+      const tasks = Array.from(taskList.children);
+
+      if (criteria === 'created') {
+        // 作成順
+        tasks.sort((a, b) => parseInt(a.dataset.index, 10) - parseInt(b.dataset.index, 10));
+      } else if (criteria === 'priority') {
+        // 重要度順
+        tasks.sort((a, b) => parseInt(b.getAttribute('data-priority'), 10) - parseInt(a.getAttribute('data-priority'), 10));
+      }
+
+      tasks.forEach(task => taskList.appendChild(task));
+
+      document.getElementById('sort-options').classList.add('hidden');
+    }
+
+    // 編集ボタン生成関数
+    function createEditButton(taskItem, taskTitle, taskDescription, taskPriority, taskDeadline) {
+      const editButton = document.createElement('button');
+      editButton.textContent = '✏️';
+      editButton.classList.add('edit-button');
+      editButton.addEventListener('click', function () {
+          enableEditMode(taskItem, taskTitle, taskDescription, taskPriority, taskDeadline);
+      });
+      return editButton;
+    }
+
+    // 削除ボタン生成関数
+    function createDeleteButton(taskItem) {
+      const deleteButton = document.createElement('button');
+      deleteButton.textContent = '🗑️';
+      deleteButton.classList.add('delete-button');
+
+      deleteButton.addEventListener('click', function () {
+        if (confirm('このタスクを削除しますか？')) {
+          taskItem.remove();
+          saveTasksToStorage();
+        }
+      });
+      return deleteButton;
+    }
+
+    // 編集モード
+    function enableEditMode(taskItem, taskTitle, taskDescription, taskPriority, taskDeadline) {
+      const taskContent = taskItem.querySelector('.task-content');
+
+      const titleInput = document.createElement('input');
+      titleInput.type = 'text';
+      titleInput.value = taskTitle.textContent;
+
+      const descriptionInput = document.createElement('textarea');
+      descriptionInput.value = taskDescription.textContent;
+
+      const priorityInput = document.createElement('input');
+      priorityInput.type = 'number';
+      priorityInput.min = '1';
+      priorityInput.max = '5';
+      priorityInput.step = '1';
+      priorityInput.value = taskPriority.textContent.replace('重要度: ', '');
+
+      const deadlineInput = document.createElement('input');
+      deadlineInput.type = 'datetime-local';
+      const deadlineISO = new Date(taskDeadline.textContent.replace('期限: ', '')).toISOString().slice(0,16);
+      deadlineInput.value = deadlineISO;
+
+      const saveButton = document.createElement('button');
+      saveButton.textContent = '保存';
+      saveButton.addEventListener('click', function () {
+        taskTitle.textContent = titleInput.value;
+        taskDescription.textContent = descriptionInput.value;
+        taskPriority.textContent = `重要度: ${priorityInput.value || "未設定"}`;
+        taskDeadline.textContent = `期限: ${deadlineInput.value.replace('T', ' ')}`;
+        
+        taskContent.replaceChildren(taskTitle, taskDescription, taskPriority, taskDeadline);
+        saveTasksToStorage();
+      });
+
+      taskContent.replaceChildren(titleInput, descriptionInput, priorityInput, deadlineInput, saveButton);
+    }
+
+    // アラート通知機能
+    setInterval(checkTaskAlerts, 60000);
+
+    function checkTaskAlerts() {
+      const taskItems = document.querySelectorAll('.task-item');
+      const now = new Date();
+
+      taskItems.forEach(task => {
+        const deadlineText = task.querySelector('p:nth-of-type(3)').textContent.replace('期限: ', '').trim();
+        const deadline = new Date(deadlineText);
+
+        const diffInMinutes = Math.floor((deadline - now) / (1000 * 60));
+
+        // 1日前の通知
+        if (diffInMinutes >= (notificationSettings.oneDayBefore - 1) && diffInMinutes < (notificationSettings.oneDayBefore + 1) && !task.dataset.alertedOneDay) {
+          const days = notificationSettings.oneDayBefore / 1440;
+          const dayText = days === 1 ? '1日' : `${days}分`;
+          alert(`「${task.querySelector('h3').textContent}」の期限が${dayText}後だよ！忘れずにやろう！`);
+          task.dataset.alertedOneDay = "true";
+        }
+
+        // 1時間前の通知
+        if (diffInMinutes >= (notificationSettings.oneHourBefore - 1) && diffInMinutes < (notificationSettings.oneHourBefore + 1) && !task.dataset.alertedOneHour) {
+          const hourText = notificationSettings.oneHourBefore === 60 ? '1時間' : `${notificationSettings.oneHourBefore}分`;
+          alert(`「${task.querySelector('h3').textContent}」の期限が${hourText}後だ！取り掛かろう！`);
+          task.dataset.alertedOneHour = "true";
+        }
+
+        // 10分前の通知
+        if (diffInMinutes >= (notificationSettings.tenMinutesBefore - 1) && diffInMinutes < (notificationSettings.tenMinutesBefore + 1) && !task.dataset.alertedTenMinutes) {
+          alert(`「${task.querySelector('h3').textContent}」の期限が${notificationSettings.tenMinutesBefore}分後に迫ってるけど、君ならやるよね！`);
+          task.dataset.alertedTenMinutes = "true";
+        }
+      });
+    }
+
+    function saveTasksToStorage() {
+      const tasks = Array.from(document.getElementById('task-list').children).map((task, index) => {
+        const title = task.querySelector('h3').textContent;
+        const description = task.querySelector('p:nth-of-type(1)').textContent;
+        const priority = parseInt(task.getAttribute('data-priority'), 10) || 1;
+        const deadline = task.querySelector('p:nth-of-type(3)').textContent.replace('期限: ', '');
+        return { title, description, priority, deadline, index };
+      });
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    function loadTasksFromStorage() {
+      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+      const taskList = document.getElementById('task-list');
+      tasks.forEach((task) => {
+        const taskElement = createTaskItem(task.title, task.description, task.priority, task.deadline, task.index);
+        taskList.appendChild(taskElement);
+      });
+    }
+
+    // 初期化時に設定をロード
+    window.onload = function () {
+      goToMenu();
+      loadTasksFromStorage();
+      loadSettings(); 
+    };
+
+    let points = 1000; // 現在のポイント
+    const defaultCompliments = [
+      "素晴らしいです", "よくやりました!", "天才ですか!?", "最高です", 
+      "偉いです！", "完璧です!", "お疲れ様です"
+    ];
+
+    let gachaCompliments = [
+      { text: "今日も髪型が決まってますね！", rarity: 2 },
+      { text: "あなたの笑顔は最高です！", rarity: 1 },
+      { text: "努力が伝わります！", rarity: 1 },
+      { text: "一緒にいると楽しいです！", rarity: 2 },
+      { text: "決断力が素晴らしいですね！", rarity: 2 },
+      { text: "いつも頼りになります！", rarity: 1 },
+      { text: "独創的ですね！", rarity: 1 },
+      { text: "あなたの考えは新鮮です！", rarity: 1 },
+      { text: "仕事が早いですね！", rarity: 1 },
+      { text: "素敵な感性をお持ちです！", rarity: 1 },
+      { text: "今日は特に輝いていますね！", rarity: 2 },
+      { text: "勇気がある人ですね！", rarity: 1 },
+      { text: "的確な判断力です！", rarity: 1 },
+      { text: "周囲を元気にする力があります！", rarity: 1 },
+      { text: "細やかな気配りが素晴らしいです！", rarity: 1 },
+      { text: "心が広いですね！", rarity: 2 },
+      { text: "情熱的で素敵です！", rarity: 1 },
+      { text: "落ち着いた雰囲気が魅力的です！", rarity: 2 },
+      { text: "好奇心旺盛ですね！", rarity: 3 },
+      { text: "いつも感謝しています！", rarity: 1 },
+      { text: "気遣いが素晴らしいです！", rarity: 1 },
+      { text: "目標達成おめでとうございます！", rarity: 1 },
+      { text: "真摯な姿勢に感動します！", rarity: 1 },
+      { text: "挑戦を恐れない姿が尊敬できます！", rarity: 1 },
+      { text: "自信に満ちていますね！", rarity: 1 },
+      { text: "物事を丁寧に進める姿勢が素敵です！", rarity: 1 },
+      { text: "集中力がすごいですね！", rarity: 1 },
+      { text: "今日も安定していますね！", rarity: 1 },
+      { text: "バランス感覚が抜群です！", rarity: 4 },
+      { text: "仲間思いで素敵です！", rarity: 1 },
+      { text: "行動力が抜群です！", rarity: 1 },
+      { text: "素早い対応が助かります！", rarity: 1 },
+      { text: "明るい雰囲気が魅力的です！", rarity: 1 },
+      { text: "リーダーシップが素晴らしいです！", rarity: 1 },
+      { text: "共感力がありますね！", rarity: 1 },
+      { text: "目標に向かう姿がかっこいいです！", rarity: 1 },
+      { text: "粘り強いですね！", rarity: 1 },
+      { text: "細部まで丁寧です！", rarity: 1 },
+      { text: "新しい視点が素敵です！", rarity: 1 },
+      { text: "ありがとうございます！", rarity: 5 },
+      { text: "これくらいで満足しないでください", rarity: 5 },
+      { text: "行動が迅速で素晴らしい！", rarity: 1 },
+      { text: "安心感を与えてくれます！", rarity: 1 },
+      { text: "やる気に満ちていますね！", rarity: 1 },
+      { text: "頭の回転が早いですね！", rarity: 1 },
+      { text: "視野が広いですね！", rarity: 1 },
+      { text: "真面目で素敵です！", rarity: 1 },
+      { text: "人を引きつける魅力があります！", rarity: 1 },
+      { text: "虫さえもあなたが好きです", rarity: 5 }
+    ];
+
+    // ポイントを更新する関数
+    function updatePointsDisplay() {
+      document.getElementById('points-display').textContent = `現在のポイント: ${points}pt`;
+    }
+
+    // レア度を表示するための関数
+    function displayRarity(rarity) {
+      return "★".repeat(rarity);
+    }
+
+    // ガチャ結果を取得する関数
+    function drawCompliment() {
+      if (gachaCompliments.length === 0) {
+        alert("ガチャの中の褒め言葉がなくなりました！");
+        return null;
+      }
+
+      const randomIndex = Math.floor(Math.random() * gachaCompliments.length);
+      const compliment = gachaCompliments.splice(randomIndex, 1)[0];
+      return compliment;
+    }
+
+    // 単発ガチャ
+    function pullSingleGacha() {
+      if (points < 100) {
+        alert("ポイントが足りません！");
+        return;
+      }
+
+      points -= 100; // ポイント消費
+      updatePointsDisplay();
+
+      // 演出開始
+      const resultDiv = document.getElementById("gacha-result");
+      resultDiv.innerHTML = '<div class="spin-animation">🎰</div>';
+
+      // ガチャ結果を取得
+      setTimeout(() => {
+        const result = drawCompliment();
+        if (!result) {
+          resultDiv.innerHTML = "ガチャの中の褒め言葉がなくなりました！";
+          return;
+        }
+
+        const rarityStars = displayRarity(result.rarity);
+        resultDiv.innerHTML = `
+          <div class="result-effect fade-in">
+            <p>${result.text}</p>
+            <p class="rarity">${rarityStars}</p>
+          </div>
+        `;
+      }, 2000);
+    }
+
+    // 10連ガチャ
+    function pullTenGacha() {
+      if (points < 900) {
+        alert("ポイントが足りません！");
+        return;
+      }
+
+      points -= 900;
+      updatePointsDisplay();
+
+      const resultDiv = document.getElementById('gacha-result');
+      resultDiv.innerHTML = '<div class="spin-animation">🎰🎰🎰🎰🎰🎰🎰🎰🎰🎰</div>';
+
+      // ガチャ結果を取得
+      setTimeout(() => {
+        const results = [];
+        for (let i = 0; i < 10; i++) {
+          const result = drawCompliment();
+          if (!result) break;
+          results.push(result);
+        }
+
+        if (results.length === 0) {
+          resultDiv.innerHTML = "ガチャの中の褒め言葉がなくなりました！";
+          return;
+        }
+
+        resultDiv.innerHTML = "";
+        results.forEach((result, index) => {
+          setTimeout(() => {
+            const resultItem = document.createElement('div');
+            resultItem.className = "result-effect fade-in";
+
+            resultItem.innerHTML = `
+              <p>${result.text}</p>
+              <p class="rarity">${displayRarity(result.rarity)}</p>
+            `;
+
+            resultDiv.appendChild(resultItem);
+          }, index * 500);
+        });
+      }, 2000);
+    }
+
+    // 褒め言葉をdefaultComplimentsに追加する関数
+    function addComplimentToDefault(compliment) {
+      if (!defaultCompliments.includes(compliment)) {
+        defaultCompliments.push(compliment);
+      }
+    }
+
+    // タスク達成時の褒め言葉表示
+    function showCompliment() {
+      const complimentContainer = document.createElement('div');
+      complimentContainer.classList.add('defaultCompliments');
+      complimentContainer.textContent = defaultCompliments[Math.floor(Math.random() * defaultCompliments.length)];
+
+      document.body.appendChild(complimentContainer);
+
+      setTimeout(() => complimentContainer.remove(), 1000);
+    }
+
+    // 初期設定値
+    const defaultSettings = {
+      oneDayBefore: 1440,
+      oneHourBefore: 60,
+      tenMinutesBefore: 10
+    };
+
+    let notificationSettings = { ...defaultSettings };
+
+    // 設定フォームの送信処理
+    document.getElementById('settings-form').addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      const oneDay = parseInt(document.getElementById('notify-one-day').value, 10);
+      const oneHour = parseInt(document.getElementById('notify-one-hour').value, 10);
+      const tenMinutes = parseInt(document.getElementById('notify-ten-minutes').value, 10);
+
+      // 入力値のバリデーション
+      if (!isNaN(oneDay) && oneDay > 0) {
+        notificationSettings.oneDayBefore = oneDay;
+      }
+      if (!isNaN(oneHour) && oneHour > 0) {
+        notificationSettings.oneHourBefore = oneHour;
+      }
+      if (!isNaN(tenMinutes) && tenMinutes > 0) {
+        notificationSettings.tenMinutesBefore = tenMinutes;
+      }
+
+      saveSettings();
+      alert('設定を保存しました！');
+      goToMenu();
+    });
+
+    // 設定をローカルストレージに保存
+    function saveSettings() {
+      localStorage.setItem('notificationSettings', JSON.stringify(notificationSettings));
+    }
+
+    // 設定をローカルストレージから読み込み
+    function loadSettings() {
+      const savedSettings = JSON.parse(localStorage.getItem('notificationSettings'));
+      if (savedSettings) {
+        notificationSettings = savedSettings;
+      } else {
+        notificationSettings = { ...defaultSettings };
+      }
+
+      // フォームに設定値を反映
+      document.getElementById('notify-one-day').value = notificationSettings.oneDayBefore;
+      document.getElementById('notify-one-hour').value = notificationSettings.oneHourBefore;
+      document.getElementById('notify-ten-minutes').value = notificationSettings.tenMinutesBefore;
+    }
+
+    // 通知ロジックの更新
+    function checkTaskAlerts() {
+      const taskItems = document.querySelectorAll('.task-item');
+      const now = new Date();
+
+      taskItems.forEach(task => {
+        const deadlineText = task.querySelector('p:nth-of-type(3)').textContent.replace('期限: ', '').trim();
+        const deadline = new Date(deadlineText);
+
+        const diffInMinutes = Math.floor((deadline - now) / (1000 * 60));
+
+        // 通知1
+        if (diffInMinutes >= (notificationSettings.oneDayBefore - 1) && diffInMinutes < (notificationSettings.oneDayBefore + 1) && !task.dataset.alertedOneDay) {
+          const days = notificationSettings.oneDayBefore / 1440;
+          const dayText = days === 1 ? '1日' : `${days}分`;
+          alert(`「${task.querySelector('h3').textContent}」の期限が${notificationSettings.oneDayBefore / 1440 === 1 ? '1日' : `${notificationSettings.oneDayBefore}分`}後だよ！忘れずにやろう！`);
+          task.dataset.alertedOneDay = "true";
+        }
+
+        // 通知2
+        if (diffInMinutes >= (notificationSettings.oneHourBefore - 1) && diffInMinutes < (notificationSettings.oneHourBefore + 1) && !task.dataset.alertedOneHour) {
+          const hourText = notificationSettings.oneHourBefore === 60 ? '1時間' : `${notificationSettings.oneHourBefore}分`;
+          alert(`「${task.querySelector('h3').textContent}」の期限が${notificationSettings.oneHourBefore === 60 ? '1時間' : `${notificationSettings.oneHourBefore}分`}後だ！取り掛かろう！`);
+          task.dataset.alertedOneHour = "true";
+        }
+
+        // 通知3
+        if (diffInMinutes >= (notificationSettings.tenMinutesBefore - 1) && diffInMinutes < (notificationSettings.tenMinutesBefore + 1) && !task.dataset.alertedTenMinutes) {
+          alert(`「${task.querySelector('h3').textContent}」の期限が${notificationSettings.tenMinutesBefore}分後に迫ってるけど、君ならやるよね！`);
+          task.dataset.alertedTenMinutes = "true";
+        }
+      });
+    }
+
+  </script>
+</body>
+</html>
