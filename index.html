@@ -363,14 +363,46 @@
       });
     }
 
+    // タスクの色を更新
+    function updateTaskColors() {
+      const taskItems = document.querySelectorAll('.task-item');
+      const now = new Date();
+
+      taskItems.forEach(task => {
+        const deadlineText = task.querySelector('p:nth-of-type(3)').textContent.replace('期限: ', '').trim();
+        const deadline = new Date(deadlineText);
+
+        const diffInMinutes = Math.floor((deadline - now) / (1000 * 60));
+
+        task.classList.remove('normal', 'warning', 'urgent', 'danger', 'expired');
+
+        if (diffInMinutes > 1440) {
+          task.classList.add('normal');
+        } else if (diffInMinutes > 360) {
+          task.classList.add('warning');
+        } else if (diffInMinutes > 60) {
+          task.classList.add('urgent');
+        } else if (diffInMinutes > 0) {
+          task.classList.add('danger');
+        } else {
+          task.classList.add('expired');
+        }
+      });
+    }
+
+    // 一定間隔でタスクの色を更新（1分ごとにチェック）
+    setInterval(updateTaskColors, 60000);
+ 
     // 初期化時に設定をロード
     window.onload = function () {
       goToMenu();
       loadTasksFromStorage();
       loadSettings(); 
       updatePointsDisplay();
+      updateTaskColors();
     };
 
+    // ポイントシステム
     let storedPoints = localStorage.getItem('points');
     let points;
 
@@ -449,6 +481,7 @@
       return "★".repeat(rarity);
     }
 
+    // コレクションをロードする関数
     function loadCollection() {
       const collection = JSON.parse(localStorage.getItem('complimentCollection')) || [];
       const collectionList = document.getElementById('collection-list');
@@ -664,6 +697,9 @@
         }
       });
     }
+
+    // 通知ロジックを1分ごとに実行
+    setInterval(checkTaskAlerts, 60000);
 
   </script>
 </body>

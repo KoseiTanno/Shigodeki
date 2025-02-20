@@ -97,8 +97,14 @@ form {
   display: flex;
   align-items: center;
   background-color: #ecf0f1;
-  transition: transform 0.3s, opacity 0.3s;
+  transition: background-color 0.5s ease-in-out;
 }
+
+.task-item.normal { background-color: #ecf0f1bb; } /* 通常 */
+.task-item.warning { background-color: rgba(241, 208, 147, 0.717); } /* 24時間以内 */
+.task-item.urgent { background-color: rgba(255, 174, 76, 0.691); } /* 6時間以内 */
+.task-item.danger { background-color: rgb(251, 60, 60); } /* 1時間以内 */
+.task-item.expired { background-color: rgba(139, 0, 0, 0.741); color: white; } /* 期限超過 */
 
 .task-item input[type="checkbox"] {
   margin-right: 10px;
