@@ -344,9 +344,20 @@
       goToMenu();
       loadTasksFromStorage();
       loadSettings(); 
+      updatePointsDisplay();
     };
 
-    let points = 1000; // 現在のポイント
+    let storedPoints = localStorage.getItem('points');
+    let points;
+
+    // 初回起動なら1000ptを付与、それ以降は保存された値を使う
+    if (storedPoints === null) {
+      points = 1000;
+      localStorage.setItem('points', points);
+    } else {
+      points = parseInt(storedPoints, 10);
+    }
+
     const defaultCompliments = [
       "素晴らしいです", "よくやりました!", "天才ですか!?", "最高です", 
       "偉いです！", "完璧です!", "お疲れ様です"
@@ -406,6 +417,7 @@
     // ポイントを更新する関数
     function updatePointsDisplay() {
       document.getElementById('points-display').textContent = `現在のポイント: ${points}pt`;
+      localStorage.setItem('points', points);
     }
 
     // レア度を表示するための関数
