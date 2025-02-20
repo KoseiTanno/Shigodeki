@@ -6,8 +6,14 @@
   <title>しごでき！</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
 
+<body>
+    <!-- ロード画面 -->
+    <div id="intro-screen" class="intro-container">
+      <h1 class="app-title">しごでき！</h1>
+      <button onclick="startApp()" class="start-button">タスク管理を始める</button>
+    </div>
+  
   <!-- メニュー -->
   <div id="menu-screen" class="container">
     <h1>しごでき！</h1>
@@ -98,6 +104,11 @@
 
   <script>
     // 画面切り替え
+    function startApp() {
+      document.getElementById('intro-screen').classList.add('hidden');
+      document.getElementById('menu-screen').classList.remove('hidden');
+    }
+
     function showScreen(screenId) {
       document.querySelectorAll('.container').forEach(screen => screen.classList.add('hidden'));
       document.getElementById(screenId).classList.remove('hidden');

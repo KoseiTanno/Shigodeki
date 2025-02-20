@@ -1,6 +1,6 @@
 body {
   font-family: 'Arial', sans-serif;
-  background-color: #cccccc;
+  background: linear-gradient(135deg, #a1ccfb, #324aff);
   color: #2c3e50;
   margin: 0;
   padding: 0;
@@ -16,8 +16,8 @@ body {
   margin: 20px;
   padding: 20px;
   border-radius: 15px;
-  background-color: #dddddd;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  background: rgb(230, 229, 229);
+  box-shadow: 0 8px 16px rgba(198, 91, 255, 0.2);
   transition: all 0.3s ease;
 }
 
@@ -340,4 +340,92 @@ form {
   border-radius: 5px;
   background-color: #f9f9f9;
   resize: vertical;
+}
+
+.intro-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #a1ccfb, #324aff);
+  color: white;
+  font-size: 2rem;
+  font-weight: bold;
+  text-align: center;
+  z-index: 100;
+}
+
+.hidden {
+  display: none;
+}
+
+/* タイトルのアニメーション */
+.app-title {
+  font-size: 3rem;
+  font-weight: bold;
+  animation: fadeIn 1.5s ease-in-out;
+  color: #fff;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* スタートボタン（スタイリッシュに改良） */
+.start-button {
+  margin-top: 20px;
+  padding: 15px 30px;
+  font-size: 1.5rem;
+  background: linear-gradient(90deg, #1E90FF, #00BFFF);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(255, 255, 255, 0.3);
+  transition: all 0.3s;
+  width: 60%;
+}
+
+.start-button:hover {
+  background: linear-gradient(90deg, #00BFFF, #1E90FF);
+  transform: scale(1.1);
+  box-shadow: 0 6px 15px rgba(255, 255, 255, 0.5);
+}
+
+/* メニュー画面はデフォルトで非表示 */
+.container {
+  display: none;
+}
+
+.container:not(.hidden) {
+  display: block;
+}
+
+/* メニュー画面のアニメーション */
+.container {
+  animation: fadeIn 1s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
