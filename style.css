@@ -299,3 +299,45 @@ form {
   background-color: #ecf0f1;
   color: #2c3e50;
 }
+
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  padding: 10px;
+}
+.collection-item {
+  padding: 10px;
+  background: #f0f8ff;
+  border: 2px solid #3498db;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.compliment-text {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.rarity {
+  font-size: 0.9rem;
+  color: gold;
+}
+
+.empty-collection {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #555;
+}
+
+#collection-list {
+  max-height: 500px;
+  overflow: auto;
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid #bdc3c7;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+  resize: vertical;
+}

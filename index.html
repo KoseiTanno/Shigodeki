@@ -14,6 +14,7 @@
     <button onclick="goToBoard()">タスクボード</button>
     <button onclick="goToCreateTask()">新規タスク作成</button>
     <button onclick="goToGacha()">褒め言葉ガチャ</button>
+    <button onclick="goToCollection()">コレクション</button>
     <button onclick="goToSettings()">設定</button>
   </div>
 
@@ -58,6 +59,13 @@
     <button onclick="pullSingleGacha()">単発ガチャ (100pt)</button>
     <button onclick="pullTenGacha()">10連ガチャ (900pt)</button>
     <div id="gacha-result"></div>
+    <button onclick="goToMenu()" class="back-button">メニュー画面に戻る</button>
+  </div>
+
+  <!-- コレクション -->
+  <div id="collection-screen" class="container hidden">
+    <h2>コレクション</h2>
+    <div id="collection-list"></div>
     <button onclick="goToMenu()" class="back-button">メニュー画面に戻る</button>
   </div>
 
@@ -110,6 +118,11 @@
     function goToGacha() {
       showScreen('gacha-screen');
       updatePointsDisplay();
+    }
+
+    function goToCollection() {
+      showScreen('collection-screen');
+      loadCollection();
     }
 
     function goToSettings() {
@@ -425,15 +438,39 @@
       return "★".repeat(rarity);
     }
 
+    function loadCollection() {
+      const collection = JSON.parse(localStorage.getItem('complimentCollection')) || [];
+      const collectionList = document.getElementById('collection-list');
+      
+      if (collection.length > 0) {
+        collectionList.innerHTML = collection.map(compliment => `
+          <div class="collection-item">
+            <p class="compliment-text">${compliment.text}</p>
+            <p class="rarity">${displayRarity(compliment.rarity)}</p>
+          </div>
+        `).join('');
+      } else {
+        collectionList.innerHTML = '<p class="empty-collection">まだ取得した褒め言葉がありません。</p>';
+      }
+    }
+
+    function saveToCollection(compliment) {
+      let collection = JSON.parse(localStorage.getItem('complimentCollection')) || [];
+      if (!collection.some(c => c.text === compliment.text)) {
+        collection.push(compliment);
+        localStorage.setItem('complimentCollection', JSON.stringify(collection));
+      }
+    }
+
     // ガチャ結果を取得する関数
     function drawCompliment() {
       if (gachaCompliments.length === 0) {
         alert("ガチャの中の褒め言葉がなくなりました！");
         return null;
       }
-
       const randomIndex = Math.floor(Math.random() * gachaCompliments.length);
       const compliment = gachaCompliments.splice(randomIndex, 1)[0];
+      saveToCollection(compliment); // コレクションに保存
       return compliment;
     }
 
