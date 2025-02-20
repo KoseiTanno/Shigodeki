@@ -8,7 +8,7 @@
 </head>
 <body>
 
-  <!-- メニュー画面 -->
+  <!-- メニュー -->
   <div id="menu-screen" class="container">
     <h1>しごでき！</h1>
     <button onclick="goToBoard()">タスクボード</button>
@@ -17,7 +17,7 @@
     <button onclick="goToSettings()">設定</button>
   </div>
 
-  <!-- タスクボード画面 -->
+  <!-- タスクボード -->
   <div id="board-screen" class="container hidden">
     <h2>タスクボード</h2>
     <div id="task-list"></div>
@@ -30,7 +30,7 @@
     </div>
   </div>
 
-  <!-- タスク作成画面 -->
+  <!-- タスク作成 -->
   <div id="create-task-screen" class="container hidden">
     <h2>新規タスク作成</h2>
     <form id="create-task-form">
@@ -51,7 +51,7 @@
     <button onclick="goToMenu()" class="back-button">メニュー画面に戻る</button>
   </div>
 
-  <!-- ガチャ画面 -->
+  <!-- ガチャ -->
   <div id="gacha-screen" class="container hidden">
     <h2>褒め言葉ガチャ</h2>
     <p id="points-display">現在のポイント: 0pt</p>
@@ -61,11 +61,11 @@
     <button onclick="goToMenu()" class="back-button">メニュー画面に戻る</button>
   </div>
 
-  <!-- 設定画面 -->
+  <!-- 設定 -->
   <div id="settings-screen" class="container hidden">
     <h2>設定</h2>
     
-    <!-- 通知タイミング設定 -->
+    <!-- 通知タイミング -->
     <form id="settings-form">
       <div class="setting-item">
         <label for="notify-one-day">通知1（分単位）:</label>
@@ -89,7 +89,7 @@
   </div>
 
   <script>
-    // 画面切り替え関数
+    // 画面切り替え
     function showScreen(screenId) {
       document.querySelectorAll('.container').forEach(screen => screen.classList.add('hidden'));
       document.getElementById(screenId).classList.remove('hidden');
@@ -152,7 +152,7 @@
       }
     });
 
-    // タスク項目生成関数
+    // タスク項目生成
     function createTaskItem(title, description, priority, deadline, index) {
       const taskItem = document.createElement('div');
       taskItem.classList.add('task-item');
@@ -237,7 +237,7 @@
       saveTasksToStorage();
     }
 
-    // 並び替え関数
+    // 並び替え
     function sortTasks(criteria) {
       const taskList = document.getElementById('task-list');
       const tasks = Array.from(taskList.children);
@@ -255,7 +255,7 @@
       document.getElementById('sort-options').classList.add('hidden');
     }
 
-    // 編集ボタン生成関数
+    // 編集ボタン生成
     function createEditButton(taskItem, taskTitle, taskDescription, taskPriority, taskDeadline) {
       const editButton = document.createElement('button');
       editButton.textContent = '✏️';
@@ -266,7 +266,7 @@
       return editButton;
     }
 
-    // 削除ボタン生成関数
+    // 削除ボタン生成
     function createDeleteButton(taskItem) {
       const deleteButton = document.createElement('button');
       deleteButton.textContent = '🗑️';
@@ -281,7 +281,7 @@
       return deleteButton;
     }
 
-    // 編集モード
+    // 編集
     function enableEditMode(taskItem, taskTitle, taskDescription, taskPriority, taskDeadline) {
       const taskContent = taskItem.querySelector('.task-content');
 
@@ -317,42 +317,6 @@
       });
 
       taskContent.replaceChildren(titleInput, descriptionInput, priorityInput, deadlineInput, saveButton);
-    }
-
-    // アラート通知機能
-    setInterval(checkTaskAlerts, 60000);
-
-    function checkTaskAlerts() {
-      const taskItems = document.querySelectorAll('.task-item');
-      const now = new Date();
-
-      taskItems.forEach(task => {
-        const deadlineText = task.querySelector('p:nth-of-type(3)').textContent.replace('期限: ', '').trim();
-        const deadline = new Date(deadlineText);
-
-        const diffInMinutes = Math.floor((deadline - now) / (1000 * 60));
-
-        // 1日前の通知
-        if (diffInMinutes >= (notificationSettings.oneDayBefore - 1) && diffInMinutes < (notificationSettings.oneDayBefore + 1) && !task.dataset.alertedOneDay) {
-          const days = notificationSettings.oneDayBefore / 1440;
-          const dayText = days === 1 ? '1日' : `${days}分`;
-          alert(`「${task.querySelector('h3').textContent}」の期限が${dayText}後だよ！忘れずにやろう！`);
-          task.dataset.alertedOneDay = "true";
-        }
-
-        // 1時間前の通知
-        if (diffInMinutes >= (notificationSettings.oneHourBefore - 1) && diffInMinutes < (notificationSettings.oneHourBefore + 1) && !task.dataset.alertedOneHour) {
-          const hourText = notificationSettings.oneHourBefore === 60 ? '1時間' : `${notificationSettings.oneHourBefore}分`;
-          alert(`「${task.querySelector('h3').textContent}」の期限が${hourText}後だ！取り掛かろう！`);
-          task.dataset.alertedOneHour = "true";
-        }
-
-        // 10分前の通知
-        if (diffInMinutes >= (notificationSettings.tenMinutesBefore - 1) && diffInMinutes < (notificationSettings.tenMinutesBefore + 1) && !task.dataset.alertedTenMinutes) {
-          alert(`「${task.querySelector('h3').textContent}」の期限が${notificationSettings.tenMinutesBefore}分後に迫ってるけど、君ならやるよね！`);
-          task.dataset.alertedTenMinutes = "true";
-        }
-      });
     }
 
     function saveTasksToStorage() {
@@ -429,7 +393,6 @@
       { text: "細部まで丁寧です！", rarity: 1 },
       { text: "新しい視点が素敵です！", rarity: 1 },
       { text: "ありがとうございます！", rarity: 5 },
-      { text: "これくらいで満足しないでください", rarity: 5 },
       { text: "行動が迅速で素晴らしい！", rarity: 1 },
       { text: "安心感を与えてくれます！", rarity: 1 },
       { text: "やる気に満ちていますね！", rarity: 1 },
@@ -538,7 +501,6 @@
       }, 2000);
     }
 
-    // 褒め言葉をdefaultComplimentsに追加する関数
     function addComplimentToDefault(compliment) {
       if (!defaultCompliments.includes(compliment)) {
         defaultCompliments.push(compliment);
@@ -573,7 +535,6 @@
       const oneHour = parseInt(document.getElementById('notify-one-hour').value, 10);
       const tenMinutes = parseInt(document.getElementById('notify-ten-minutes').value, 10);
 
-      // 入力値のバリデーション
       if (!isNaN(oneDay) && oneDay > 0) {
         notificationSettings.oneDayBefore = oneDay;
       }
